@@ -5,6 +5,8 @@ import { stringifyJson } from '../helpers/json/stringify.ts'
 import { cleanIndexName } from '../helpers/cleanIndexName.ts'
 import { AuthType, ElasticsearchClusterConnection } from '../store/connection.ts'
 import { AwsClient } from 'aws4fetch'
+import { invoke } from '@tauri-apps/api/core'
+import { buildConfig } from '../buildConfig.ts'
 
 interface IndexGetArgs {
   routing?: string
@@ -20,10 +22,12 @@ const chunk = (array: any[], size: number) => {
 export default class ElasticsearchAdapter {
   uri: string
   awsClient: AwsClient | null
+  awsSystemCredentials: { region: string; profile?: string } | null
   authHeader?: string
 
   constructor({ uri, auth }: ElasticsearchClusterConnection) {
     this.uri = addTrailingSlash(uri)
+    this.awsSystemCredentials = null
 
     if (auth.authType === AuthType.awsIAM) {
       this.awsClient = new AwsClient({
@@ -33,9 +37,67 @@ export default class ElasticsearchAdapter {
         region: auth.authData.region,
         service: 'es'
       })
+    } else if (auth.authType === AuthType.awsSystemCredentials) {
+      this.awsClient = null
+      this.awsSystemCredentials = { region: auth.authData.region, profile: auth.authData.profile }
+    } else {
+      this.awsClient = null
     }
 
     this.authHeader = clusterAuthHeader(auth)
+  }
+
+  async request(path: string, method: string, params?: any) {
+    const url = new URL(this.uri + path)
+
+    if (method === 'GET' && typeof params === 'object') {
+      Object.keys(params).forEach((key) => url.searchParams.append(key, params[key]))
+    }
+
+    let body = null
+    if (method === 'PUT' || method === 'POST') body = params
+
+    const options: RequestInit = {
+      method,
+      body: body && typeof body !== 'string' ? stringifyJson(body) : body,
+      headers: { ...REQUEST_DEFAULT_HEADERS }
+    }
+
+    if (this.authHeader) {
+      // @ts-expect-error header definition
+      options.headers['Authorization'] = this.authHeader
+    } else if (this.awsSystemCredentials) {
+      const client = await this.buildAwsClientFromSystem()
+      const signed = await client.sign(url.toString(), options)
+      options.headers = {} as HeadersInit
+      signed.headers.forEach((value, key) => {
+        // @ts-expect-error header definition
+        options.headers[key] = value
+      })
+    } else if (this.awsClient) {
+      const signed = await this.awsClient.sign(url.toString(), options)
+      options.headers = {} as HeadersInit
+      signed.headers.forEach((value, key) => {
+        // @ts-expect-error header definition
+        options.headers[key] = value
+      })
+    }
+
+    return new Promise((resolve, reject) => {
+      return fetchMethod(url, options)
+        .then((response) => {
+          if (options.method === 'HEAD') {
+            return resolve(response.ok)
+          }
+
+          if (response.ok) {
+            resolve(response)
+          } else {
+            reject(response)
+          }
+        })
+        .catch(reject)
+    })
   }
 
   call(method: ElasticsearchMethod, ...args: any[]): Promise<any> {
@@ -339,48 +401,20 @@ export default class ElasticsearchAdapter {
     return this.request('_slm/status', 'GET')
   }
 
-  async request(path: string, method: string, params?: any) {
-    const url = new URL(this.uri + path)
-
-    if (method === 'GET' && typeof params === 'object') {
-      Object.keys(params).forEach((key) => url.searchParams.append(key, params[key]))
+  private async buildAwsClientFromSystem(): Promise<AwsClient> {
+    if (!buildConfig.tauri) {
+      throw new Error('System AWS credentials are only supported in the desktop app')
     }
-
-    let body = null
-    if (method === 'PUT' || method === 'POST') body = params
-
-    const options: RequestInit = {
-      method,
-      body: body && typeof body !== 'string' ? stringifyJson(body) : body,
-      headers: { ...REQUEST_DEFAULT_HEADERS }
-    }
-
-    if (this.authHeader) {
-      // @ts-expect-error header definition
-      options.headers['Authorization'] = this.authHeader
-    } else if (this.awsClient) {
-      const signed = await this.awsClient.sign(url.toString(), options)
-      options.headers = {} as HeadersInit
-      signed.headers.forEach((value, key) => {
-        // @ts-expect-error header definition
-        options.headers[key] = value
-      })
-    }
-
-    return new Promise((resolve, reject) => {
-      return fetchMethod(url, options)
-        .then((response) => {
-          if (options.method === 'HEAD') {
-            return resolve(response.ok)
-          }
-
-          if (response.ok) {
-            resolve(response)
-          } else {
-            reject(response)
-          }
-        })
-        .catch(reject)
+    const creds = await invoke<{ access_key_id: string; secret_access_key: string; session_token?: string }>(
+      'get_aws_credentials',
+      { profile: this.awsSystemCredentials?.profile ?? null }
+    )
+    return new AwsClient({
+      accessKeyId: creds.access_key_id,
+      secretAccessKey: creds.secret_access_key,
+      sessionToken: creds.session_token,
+      region: this.awsSystemCredentials!.region,
+      service: 'es'
     })
   }
 

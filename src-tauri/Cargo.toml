@@ -29,6 +29,9 @@ tauri-plugin-dialog = "2"
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-process = "2"
 tauri-plugin-opener = "2"
+aws-config = { version = "1", features = ["behavior-version-latest"] }
+aws-credential-types = { version = "1", features = ["hardcoded-credentials"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [features]
 # by default Tauri runs in production mode

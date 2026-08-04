@@ -1,9 +1,11 @@
 use fetch_reqwest::{FetchOptions, FetchResponseResult};
 
+mod aws_credentials;
 mod load_file;
 mod menu;
 mod save_file;
 
+use aws_credentials::get_aws_credentials;
 use load_file::load_file;
 use save_file::save_file;
 
@@ -36,6 +38,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             fetch_reqwest,
+            get_aws_credentials,
             load_file,
             save_file
         ])

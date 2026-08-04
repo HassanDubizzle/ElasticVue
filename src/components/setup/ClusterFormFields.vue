@@ -100,6 +100,25 @@
       />
     </div>
 
+    <div v-if="cluster.auth.authType === AuthType.awsSystemCredentials">
+      <custom-input
+        v-model="cluster.auth.authData.region"
+        :label="t('setup.test_and_connect.form.region.label')"
+        :rules="[required]"
+        autocomplete="off"
+        class="q-mb-md"
+        outlined
+      />
+      <custom-input
+        v-model="cluster.auth.authData.profile"
+        :hint="t('setup.test_and_connect.form.aws_profile.hint')"
+        :label="t('setup.test_and_connect.form.aws_profile.label')"
+        autocomplete="off"
+        class="q-mb-md"
+        outlined
+      />
+    </div>
+
     <custom-input
       v-model="cluster.uri"
       name="uri"
@@ -140,7 +159,8 @@ const authorizationTypes = [
   { value: AuthType.none, label: 'No authorization' },
   { value: AuthType.basicAuth, label: 'Basic auth' },
   { value: AuthType.apiKey, label: 'API key' },
-  { value: AuthType.awsIAM, label: 'AWS IAM' }
+  { value: AuthType.awsIAM, label: 'AWS IAM' },
+  { value: AuthType.awsSystemCredentials, label: 'AWS System Credentials' }
 ]
 
 const cluster = ref(props.modelValue)

@@ -9,7 +9,8 @@ export enum AuthType {
   none = 'none',
   basicAuth = 'basicAuth',
   apiKey = 'apiKey',
-  awsIAM = 'awsIAM'
+  awsIAM = 'awsIAM',
+  awsSystemCredentials = 'awsSystemCredentials'
 }
 
 export type ElasticsearchCluster = {
@@ -47,6 +48,10 @@ export type ElasticsearchClusterAuth =
       authType: AuthType.awsIAM
       authData: { accessKeyId: string; secretAccessKey: string; sessionToken?: string; region: string }
     }
+  | {
+  authType: AuthType.awsSystemCredentials
+  authData: { region: string; profile?: string }
+}
 
 export type ConnectionState = {
   clusters: ElasticsearchCluster[]
@@ -150,6 +155,17 @@ const cleanupClusterAuth = (cluster: ElasticsearchCluster): ElasticsearchCluster
             secretAccessKey: cluster.auth.authData.secretAccessKey,
             sessionToken: cluster.auth.authData.sessionToken,
             region: cluster.auth.authData.region
+          }
+        }
+      }
+    case AuthType.awsSystemCredentials:
+      return {
+        ...cluster,
+        auth: {
+          authType: AuthType.awsSystemCredentials,
+          authData: {
+            region: cluster.auth.authData.region,
+            profile: cluster.auth.authData.profile
           }
         }
       }

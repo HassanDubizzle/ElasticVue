@@ -581,6 +581,10 @@
         "region": {
           "label": "AWS region"
         },
+        "aws_profile": {
+          "label": "AWS profile (optional)",
+          "hint": "Leave empty to use the default credential chain"
+        },
         "test_connection": "Test connection",
         "connect": "Connect"
       },

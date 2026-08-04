@@ -46,5 +46,7 @@ export const clusterAuthHeader = ({ authType, authData }: ElasticsearchClusterAu
       return buildFetchAuthHeader('', authData.apiKey)
     case AuthType.awsIAM:
       return undefined
+    case AuthType.awsSystemCredentials:
+      return undefined
   }
 }
