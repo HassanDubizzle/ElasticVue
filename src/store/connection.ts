@@ -28,6 +28,7 @@ export type ElasticsearchCluster = {
 export type ElasticsearchClusterConnection = {
   name: string
   uri: string
+  uris?: string[]
   auth: ElasticsearchClusterAuth
 }
 
@@ -46,7 +47,7 @@ export type ElasticsearchClusterAuth =
     }
   | {
       authType: AuthType.awsIAM
-      authData: { accessKeyId: string; secretAccessKey: string; sessionToken?: string; region: string }
+  authData: { accessKeyId: string; secretAccessKey: string; sessionToken?: string; region?: string }
     }
   | {
   authType: AuthType.awsSystemCredentials

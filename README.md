@@ -26,8 +26,8 @@ Contents
 
 [Screenshots](https://elasticvue.com/features)
 
-**Elasticvue** is a free and open-source gui for elasticsearch that you can use to manage the data in your cluster.
-It supports every version of elasticsearch, even those that are EOL. Check
+**Elasticvue** is a free and open-source gui for elasticsearch that you can use to manage the data in your cluster. It
+supports every version of elasticsearch, even those that are EOL. Check
 the [FAQ](https://github.com/cars10/elasticvue/wiki/FAQ) for more details.
 
 ### Features
@@ -44,13 +44,13 @@ the [FAQ](https://github.com/cars10/elasticvue/wiki/FAQ) for more details.
 
 You can use elasticvue in several ways, use whatever works best for you.
 
-| Type | Auto Update | Cluster config | Support for self signed ssl |
-|------|-------------|----------------|-----------------------------|
-| Desktop app | Yes | not needed | yes |
-| Browser extension | Yes | not needed | partially |
-| Web | Yes | required | partially |
-| Self hosted | No | required | partially |
-| Docker | No | required | partially |
+| Type              | Auto Update | Cluster config | Support for self signed ssl |
+|-------------------|-------------|----------------|-----------------------------|
+| Desktop app       | Yes         | not needed     | yes                         |
+| Browser extension | Yes         | not needed     | partially                   |
+| Web               | Yes         | required       | partially                   |
+| Self hosted       | No          | required       | partially                   |
+| Docker            | No          | required       | partially                   |
 
 ### Desktop App - *recommended*
 
@@ -90,9 +90,9 @@ docker run -p 8080:8080 --name elasticvue -d cars10/elasticvue
 docker run -p 8080:8080 --name elasticvue -d ghcr.io/cars10/elasticvue
 ```
 
-When using docker you can provide default cluster configuration for your users. Clusters will automatically be imported every time you start elasticvue.
-You can either set an environment variable or provide a config file as a volume. In either case the content should be a json array of your
-clusters, looking like this:
+When using docker you can provide default cluster configuration for your users. Clusters will automatically be imported
+every time you start elasticvue. You can either set an environment variable or provide a config file as a volume. In
+either case the content should be a json array of your clusters, looking like this:
 
 ```json
 [
@@ -111,19 +111,33 @@ clusters, looking like this:
 
 #### Possible keys
 
-| Name | Value | Required | Example |
-|------|-------|----------|---------|
-| name | Name of the cluster | No | `"production"` |
-| uri  | Cluster uri | Yes | `"http://localhost:9200"` |
-| username | Username for basic authentication | No | `"elastic"` |
-| password | Password for basic authentication | No | `"foobar"` |
-| apiKey | API key for authentication | No | `"VuaCfGcBCdbkQm-e5aOx:ui2lp2axTNm5ShWDc11v6g"` |
-| S3accessKeyId | AWS access key ID for IAM authentication | No | `"AKIAIOSFODNN7EXAMPLE"` |
-| S3secretAccessKey | AWS secret access key for IAM authentication | No | `"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"` |
-| S3sessionToken | AWS session token for temporary credentials | No | `"FQoGZXIvYXdzE...example"` |
-| S3region | AWS region for IAM authentication | No | `"us-east-1"` |
+| Name              | Value                                        | Required | Example                                                              |
+|-------------------|----------------------------------------------|----------|----------------------------------------------------------------------|
+| name              | Name of the cluster                          | No       | `"production"`                                                       |
+| uri               | Cluster uri or ordered list of uris          | Yes      | `"http://localhost:9200"` or `["https://primary", "https://backup"]` |
+| username          | Username for basic authentication            | No       | `"elastic"`                                                          |
+| password          | Password for basic authentication            | No       | `"foobar"`                                                           |
+| apiKey            | API key for authentication                   | No       | `"VuaCfGcBCdbkQm-e5aOx:ui2lp2axTNm5ShWDc11v6g"`                      |
+| S3accessKeyId     | AWS access key ID for IAM authentication     | No       | `"AKIAIOSFODNN7EXAMPLE"`                                             |
+| S3secretAccessKey | AWS secret access key for IAM authentication | No       | `"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"`                         |
+| S3sessionToken    | AWS session token for temporary credentials  | No       | `"FQoGZXIvYXdzE...example"`                                          |
+| S3region          | AWS region for IAM authentication            | No       | `"us-east-1"`                                                        |
 
+For builds that need a cluster picker, put the cluster definitions in `default_clusters.json` (or pass
+`PREDEFINED_CLUSTERS_FILE=path/to/clusters.json` to a Makefile build). The `uri` value may be an array; URLs are tried
+in order and the working URL is saved when the cluster is added:
 
+```json
+[
+    {
+        "name": "production",
+        "uri": [
+            "https://primary.example",
+            "https://backup.example"
+        ]
+    }
+]
+```
 
 #### Docker with default clusters in environment variable
 
@@ -178,23 +192,23 @@ or `compose.yml`
 
 ```yml
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:9.0.0
-    ports:
-      - "9200:9200"
-    environment:
-      - http.cors.enabled=true
-      - http.cors.allow-origin="/.*/"
-      - http.cors.allow-headers=X-Requested-With,Content-Type,Content-Length,Authorization
-      - discovery.type=single-node
+    elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:9.0.0
+        ports:
+            - "9200:9200"
+        environment:
+            - http.cors.enabled=true
+            - http.cors.allow-origin="/.*/"
+            - http.cors.allow-headers=X-Requested-With,Content-Type,Content-Length,Authorization
+            - discovery.type=single-node
 ```
 
 After configuration restart your cluster and you should be able to connect.
 
 ## Browser Support
 
-Any current version of Chrome, Firefox and Edge should work without issues. Safari is mostly untested so your
-mileage may vary.
+Any current version of Chrome, Firefox and Edge should work without issues. Safari is mostly untested so your mileage
+may vary.
 
 ## Troubleshooting
 

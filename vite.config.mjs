@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import { dirname, resolve } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'url'
 
 function removeDataTestid (node) {
@@ -12,6 +13,11 @@ function removeDataTestid (node) {
 }
 
 const prod = process.env.NODE_ENV === 'production'
+const predefinedClustersFile = process.env.VITE_APP_PREDEFINED_CLUSTERS_FILE || 'default_clusters.json'
+const predefinedClustersPath = resolve(dirname(fileURLToPath(import.meta.url)), predefinedClustersFile)
+const predefinedClusters = existsSync(predefinedClustersPath)
+  ? JSON.parse(readFileSync(predefinedClustersPath, 'utf8'))
+  : []
 
 export default defineConfig({
   base: process.env.VITE_APP_PUBLIC_PATH || '/',
@@ -40,5 +46,6 @@ export default defineConfig({
   },
   define: {
     '__APP_VERSION__': JSON.stringify(process.env.npm_package_version),
+    '__PREDEFINED_CLUSTERS__': JSON.stringify(predefinedClusters)
   }
 })

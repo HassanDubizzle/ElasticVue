@@ -25,7 +25,7 @@ export const buildAuth = (cluster: PredefinedCluster): ElasticsearchClusterAuth 
     }
   }
 
-  if (S3accessKeyId?.length && S3secretAccessKey?.length && S3region?.length) {
+  if (S3accessKeyId?.length && S3secretAccessKey?.length) {
     return {
       authType: AuthType.awsIAM,
       authData: {

@@ -119,7 +119,18 @@
       />
     </div>
 
+    <q-select
+      v-model="clusterChoice"
+      :options="clusterOptions"
+      class="q-mb-md"
+      emit-value
+      label="Cluster"
+      map-options
+      outlined
+      @update:model-value="selectCluster"
+    />
     <custom-input
+      v-if="clusterChoice === OTHER_CLUSTER"
       v-model="cluster.uri"
       name="uri"
       :rules="[validateUri, required]"
@@ -148,7 +159,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useTranslation } from '../../composables/i18n.ts'
-import { DEFAULT_CLUSTER_URI } from '../../consts.ts'
+import { DEFAULT_CLUSTER_NAME, DEFAULT_CLUSTER_URI } from '../../consts.ts'
 import { AuthType, ElasticsearchClusterConnection } from '../../store/connection.ts'
 import { buildConfig } from '../../buildConfig.ts'
 import CustomInput from '../shared/CustomInput.vue'
@@ -164,6 +175,19 @@ const authorizationTypes = [
 ]
 
 const cluster = ref(props.modelValue)
+const OTHER_CLUSTER = 'other'
+type ConfiguredCluster = { name?: string; uri: string | string[] }
+const configuredClusters = (
+  Array.isArray(buildConfig.predefinedClusters) ? buildConfig.predefinedClusters : []
+) as ConfiguredCluster[]
+const clusterOptions = [
+  ...configuredClusters.map((configured, index) => ({
+    label: configured.name || configured.uri.toString(),
+    value: String(index)
+  })),
+  { label: 'Other', value: OTHER_CLUSTER }
+]
+const clusterChoice = ref(OTHER_CLUSTER)
 
 const passwordVisible = ref(false)
 const t = useTranslation()
@@ -182,6 +206,20 @@ const validateUri = (uri: string) => {
 const required = (val: string) => !!val || 'required'
 
 const resetUri = () => (cluster.value.uri = DEFAULT_CLUSTER_URI)
+const selectCluster = (choice: string) => {
+  if (choice === OTHER_CLUSTER) {
+    cluster.value.name = DEFAULT_CLUSTER_NAME
+    cluster.value.uri = DEFAULT_CLUSTER_URI
+    cluster.value.uris = undefined
+    return
+  }
+
+  const configured = configuredClusters[Number(choice)]
+  const uris = Array.isArray(configured.uri) ? configured.uri : [configured.uri]
+  cluster.value.name = configured.name || DEFAULT_CLUSTER_NAME
+  cluster.value.uri = uris[0]
+  cluster.value.uris = uris
+}
 const ssl = computed(() => /^https/.test(cluster.value.uri))
 
 const emit = defineEmits(['update:modelValue', 'update:formValid'])

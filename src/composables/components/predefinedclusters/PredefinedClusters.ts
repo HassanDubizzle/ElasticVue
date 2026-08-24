@@ -1,12 +1,13 @@
 import { BuildFlavor, ConnectionState, ElasticsearchCluster } from '../../../store/connection.ts'
 import { buildAuth } from '../../../helpers/predefinedClusters/buildAuth.ts'
+import { buildConfig } from '../../../buildConfig.ts'
 
 export type PredefinedCluster = {
   name?: string
   username?: string
   password?: string
   apiKey?: string
-  uri: string
+  uri: string | string[]
   S3accessKeyId?: string
   S3secretAccessKey?: string
   S3sessionToken?: string
@@ -22,6 +23,11 @@ export const importPredefinedClusters = async () => {
 }
 
 export const loadPredefinedClusters = async () => {
+  const configuredClusters = Array.isArray(buildConfig.predefinedClusters)
+    ? (buildConfig.predefinedClusters as PredefinedCluster[])
+    : []
+  if (configuredClusters.length > 0) return configuredClusters
+
   try {
     const response = await fetch('/api/default_clusters.json')
     if (response.status !== 200) return
@@ -39,9 +45,11 @@ export const loadPredefinedClusters = async () => {
 
 export const importNewClusters = (clusters: PredefinedCluster[], remainingClusters: ElasticsearchCluster[]) => {
   const newClusters: ElasticsearchCluster[] = clusters.map((cluster) => {
+    const uris = Array.isArray(cluster.uri) ? cluster.uri : [cluster.uri]
     return {
       name: cluster.name || 'docker cluster',
-      uri: cluster.uri,
+      uri: uris[0],
+      uris,
       clusterName: '',
       version: '',
       majorVersion: '',

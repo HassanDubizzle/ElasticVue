@@ -47,9 +47,8 @@ export const useClusterConnection = (
     resetState(connectState)
     testState.value.loading = true
 
-    const adapter = new ElasticsearchAdapter(formCluster.value)
     try {
-      await adapter.test()
+      await connectToFirstAvailable((adapter) => adapter.test())
       testState.value.success = true
       testState.value.loading = false
 
@@ -72,9 +71,8 @@ export const useClusterConnection = (
     resetState(connectState)
     connectState.value.loading = true
 
-    const adapter = new ElasticsearchAdapter(formCluster.value)
     try {
-      const infoResponse: any = await adapter.test()
+      const { adapter, response: infoResponse } = await connectToFirstAvailable((candidate) => candidate.test())
       const infoJson = await infoResponse.json()
 
       const flavor = infoJson.version.build_flavor || BuildFlavor.default
@@ -121,6 +119,27 @@ export const useClusterConnection = (
 
       return Promise.reject(e)
     }
+  }
+
+  const connectToFirstAvailable = async (operation: (adapter: ElasticsearchAdapter) => Promise<any>) => {
+    const uris = [formCluster.value.uri, ...(formCluster.value.uris || [])]
+      .map((uri) => uri.trim())
+      .filter((uri, index, all) => uri.length > 0 && all.indexOf(uri) === index)
+
+    let lastError: unknown
+    for (const uri of uris) {
+      const candidate = { ...formCluster.value, uri }
+      const adapter = new ElasticsearchAdapter(candidate)
+      try {
+        const response = await operation(adapter)
+        // Keep the successful endpoint in the form so cluster add persists it.
+        formCluster.value.uri = uri
+        return { adapter, response }
+      } catch (error) {
+        lastError = error
+      }
+    }
+    throw lastError || new Error('No cluster URLs configured')
   }
 
   const connectAndRedirect = async () => {

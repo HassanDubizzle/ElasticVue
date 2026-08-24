@@ -22,6 +22,7 @@ const variant = import.meta.env.VITE_APP_VARIANT || ''
 export const buildConfig = {
   buildMode,
   variant,
+  predefinedClusters: __PREDEFINED_CLUSTERS__,
   tauri: buildMode === BuildMode.tauri,
   router: {
     base: import.meta.env.VITE_APP_PUBLIC_PATH || '/',

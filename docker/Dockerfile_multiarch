@@ -2,6 +2,8 @@
 FROM --platform=$BUILDPLATFORM node:24.15.0-bookworm AS builder
 RUN mkdir /app
 WORKDIR /app
+ARG PREDEFINED_CLUSTERS_FILE=default_clusters.json
+ENV VITE_APP_PREDEFINED_CLUSTERS_FILE=$PREDEFINED_CLUSTERS_FILE
 COPY package.json package-lock.json ./
 RUN npm install
 COPY . .
