@@ -2,7 +2,7 @@ import { AuthType, ElasticsearchClusterAuth } from '../../store/connection.ts'
 import { PredefinedCluster } from '../../composables/components/predefinedclusters/PredefinedClusters.ts'
 
 export const buildAuth = (cluster: PredefinedCluster): ElasticsearchClusterAuth => {
-  const { username, password, apiKey, S3accessKeyId, S3secretAccessKey, S3sessionToken, S3region } = cluster
+  const { username, password, apiKey, S3accessKeyId, S3secretAccessKey, S3sessionToken, S3region, awsRegion } = cluster
 
   if (username?.length && password?.length) {
     return {
@@ -22,6 +22,13 @@ export const buildAuth = (cluster: PredefinedCluster): ElasticsearchClusterAuth 
     return {
       authType: AuthType.apiKey,
       authData: { apiKey }
+    }
+  }
+
+  if (awsRegion?.length && !S3accessKeyId?.length && !S3secretAccessKey?.length) {
+    return {
+      authType: AuthType.awsSystemCredentials,
+      authData: { region: awsRegion }
     }
   }
 

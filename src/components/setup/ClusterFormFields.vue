@@ -16,7 +16,8 @@
       />
     </div>
 
-    <div v-if="cluster.auth.authType === AuthType.basicAuth || cluster.auth.authType === AuthType.apiKey" class="row q-mb-md">
+    <div v-if="cluster.auth.authType === AuthType.basicAuth || cluster.auth.authType === AuthType.apiKey"
+         class="row q-mb-md">
       <div v-if="cluster.auth.authType === AuthType.basicAuth" class="col q-pr-md">
         <custom-input
           v-model="cluster.auth.authData.username"
@@ -120,6 +121,7 @@
     </div>
 
     <q-select
+      v-if="configuredClusters.length > 0"
       v-model="clusterChoice"
       :options="clusterOptions"
       class="q-mb-md"
@@ -162,6 +164,8 @@ import { useTranslation } from '../../composables/i18n.ts'
 import { DEFAULT_CLUSTER_NAME, DEFAULT_CLUSTER_URI } from '../../consts.ts'
 import { AuthType, ElasticsearchClusterConnection } from '../../store/connection.ts'
 import { buildConfig } from '../../buildConfig.ts'
+import { buildAuth } from '../../helpers/predefinedClusters/buildAuth.ts'
+import type { PredefinedCluster } from '../../composables/components/predefinedclusters/PredefinedClusters.ts'
 import CustomInput from '../shared/CustomInput.vue'
 
 const props = defineProps<{ modelValue: ElasticsearchClusterConnection }>()
@@ -176,10 +180,9 @@ const authorizationTypes = [
 
 const cluster = ref(props.modelValue)
 const OTHER_CLUSTER = 'other'
-type ConfiguredCluster = { name?: string; uri: string | string[] }
 const configuredClusters = (
   Array.isArray(buildConfig.predefinedClusters) ? buildConfig.predefinedClusters : []
-) as ConfiguredCluster[]
+) as PredefinedCluster[]
 const clusterOptions = [
   ...configuredClusters.map((configured, index) => ({
     label: configured.name || configured.uri.toString(),
@@ -187,7 +190,7 @@ const clusterOptions = [
   })),
   { label: 'Other', value: OTHER_CLUSTER }
 ]
-const clusterChoice = ref(OTHER_CLUSTER)
+const clusterChoice = ref(configuredClusters.length > 0 ? '0' : OTHER_CLUSTER)
 
 const passwordVisible = ref(false)
 const t = useTranslation()
@@ -219,7 +222,10 @@ const selectCluster = (choice: string) => {
   cluster.value.name = configured.name || DEFAULT_CLUSTER_NAME
   cluster.value.uri = uris[0]
   cluster.value.uris = uris
+  cluster.value.auth = buildAuth(configured)
 }
+
+if (configuredClusters.length > 0) selectCluster('0')
 const ssl = computed(() => /^https/.test(cluster.value.uri))
 
 const emit = defineEmits(['update:modelValue', 'update:formValid'])

@@ -411,7 +411,10 @@ export default class ElasticsearchAdapter {
     }
     const creds = await invoke<{ access_key_id: string; secret_access_key: string; session_token?: string }>(
       'get_aws_credentials',
-      { profile: this.awsSystemCredentials?.profile ?? null }
+      {
+        profile: this.awsSystemCredentials?.profile ?? null,
+        region: this.awsSystemCredentials!.region
+      }
     )
     return new AwsClient({
       accessKeyId: creds.access_key_id,

@@ -12,6 +12,7 @@ export type PredefinedCluster = {
   S3secretAccessKey?: string
   S3sessionToken?: string
   S3region?: string
+  awsRegion?: string
 }
 
 export const importPredefinedClusters = async () => {

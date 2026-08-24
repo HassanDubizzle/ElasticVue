@@ -1,4 +1,3 @@
-use aws_config::profile::ProfileFileCredentialsProvider;
 use aws_config::BehaviorVersion;
 use aws_credential_types::provider::ProvideCredentials;
 use serde::Serialize;
@@ -11,27 +10,25 @@ pub struct AwsCredentials {
 }
 
 #[tauri::command]
-pub async fn get_aws_credentials(profile: Option<String>) -> Result<AwsCredentials, String> {
-    let credentials = match profile {
-        Some(ref p) if !p.is_empty() => {
-            let provider = ProfileFileCredentialsProvider::builder()
-                .profile_name(p)
-                .build();
-            provider
-                .provide_credentials()
-                .await
-                .map_err(|e| format!("Failed to load credentials for profile '{}': {}", p, e))?
-        }
-        _ => {
-            let config = aws_config::defaults(BehaviorVersion::latest()).load().await;
-            config
-                .credentials_provider()
-                .ok_or_else(|| "No credentials provider found".to_string())?
-                .provide_credentials()
-                .await
-                .map_err(|e| format!("Failed to load system credentials: {}", e))?
-        }
-    };
+pub async fn get_aws_credentials(
+    profile: Option<String>,
+    region: Option<String>,
+) -> Result<AwsCredentials, String> {
+    let mut loader = aws_config::defaults(BehaviorVersion::latest());
+    if let Some(region) = region.filter(|region| !region.is_empty()) {
+        loader = loader.region(aws_config::Region::new(region));
+    }
+    if let Some(profile) = profile.filter(|profile| !profile.is_empty()) {
+        loader = loader.profile_name(profile);
+    }
+
+    let config = loader.load().await;
+    let credentials = config
+        .credentials_provider()
+        .ok_or_else(|| "No credentials provider found".to_string())?
+        .provide_credentials()
+        .await
+        .map_err(|e| "Failed to load system credentials: ".to_string() + &e.to_string())?;
 
     Ok(AwsCredentials {
         access_key_id: credentials.access_key_id().to_string(),

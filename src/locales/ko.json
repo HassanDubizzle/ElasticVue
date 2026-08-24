@@ -563,6 +563,10 @@
         "region": {
           "label": "AWS 리전"
         },
+          "aws_profile": {
+              "label": "AWS 프로필(선택 사항)",
+              "hint": "기본 자격 증명 체인을 사용하려면 비워 두세요"
+          },
         "test_connection": "연결 테스트",
         "connect": "연결"
       },

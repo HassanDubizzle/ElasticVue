@@ -563,6 +563,10 @@
         "region": {
           "label": "Région AWS"
         },
+        "aws_profile": {
+          "label": "Profil AWS (facultatif)",
+          "hint": "Laisser vide pour utiliser la chaîne d'identifiants par défaut"
+        },
         "test_connection": "Tester la connexion",
         "connect": "Connecter"
       },

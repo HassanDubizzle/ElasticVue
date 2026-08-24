@@ -563,6 +563,10 @@
         "region": {
           "label": "AWS 區域"
         },
+          "aws_profile": {
+              "label": "AWS 設定檔（選填）",
+              "hint": "留空以使用預設憑證鏈"
+          },
         "test_connection": "測試連線",
         "connect": "連線"
       },

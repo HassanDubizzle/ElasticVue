@@ -563,6 +563,10 @@
         "region": {
           "label": "AWS 区域"
         },
+        "aws_profile": {
+          "label": "AWS 配置文件（可选）",
+          "hint": "留空以使用默认凭证链"
+        },
         "test_connection": "测试连接",
         "connect": "连接"
       },

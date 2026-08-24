@@ -563,6 +563,10 @@
         "region": {
           "label": "AWS リージョン"
         },
+          "aws_profile": {
+              "label": "AWS プロファイル（オプション）",
+              "hint": "デフォルトの認証情報チェーンを使用するには空欄のままにしてください"
+          },
         "test_connection": "接続をテスト",
         "connect": "接続"
       },

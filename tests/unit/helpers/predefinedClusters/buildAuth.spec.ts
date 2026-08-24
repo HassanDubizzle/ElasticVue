@@ -71,4 +71,17 @@ describe('buildAuth', () => {
 
     expect(result).toEqual({ authType: AuthType.none, authData: {} })
   })
+
+  it('returns awsSystemCredentials when a region is present', () => {
+    const cluster: PredefinedCluster = {
+      uri: 'http://localhost:9200',
+      awsRegion: 'eu-west-1'
+    }
+
+    const result = buildAuth(cluster)
+    expect(result).toEqual({
+      authType: AuthType.awsSystemCredentials,
+      authData: { region: 'eu-west-1' }
+    })
+  })
 })

@@ -563,6 +563,10 @@
         "region": {
           "label": "Regione AWS"
         },
+          "aws_profile": {
+              "label": "Profilo AWS (opzionale)",
+              "hint": "Lascia vuoto per utilizzare la catena di credenziali predefinita"
+          },
         "test_connection": "Testa connessione",
         "connect": "Connetti"
       },
