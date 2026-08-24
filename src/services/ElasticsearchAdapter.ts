@@ -63,6 +63,24 @@ export default class ElasticsearchAdapter {
       headers: { ...REQUEST_DEFAULT_HEADERS }
     }
 
+    return new Promise((resolve, reject) => {
+      return this.fetch(url, options)
+        .then((response) => {
+          if (options.method === 'HEAD') {
+            return resolve(response.ok)
+          }
+
+          if (response.ok) {
+            resolve(response)
+          } else {
+            reject(response)
+          }
+        })
+        .catch(reject)
+    })
+  }
+
+  async fetch(url: string | URL, options: RequestInit) {
     if (this.authHeader) {
       // @ts-expect-error header definition
       options.headers['Authorization'] = this.authHeader
@@ -83,21 +101,7 @@ export default class ElasticsearchAdapter {
       })
     }
 
-    return new Promise((resolve, reject) => {
-      return fetchMethod(url, options)
-        .then((response) => {
-          if (options.method === 'HEAD') {
-            return resolve(response.ok)
-          }
-
-          if (response.ok) {
-            resolve(response)
-          } else {
-            reject(response)
-          }
-        })
-        .catch(reject)
-    })
+    return fetchMethod(url, options)
   }
 
   call(method: ElasticsearchMethod, ...args: any[]): Promise<any> {

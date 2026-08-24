@@ -1,11 +1,10 @@
 import stripJsonComments from 'strip-json-comments'
-import { computed, ref, toRaw, watch, nextTick } from 'vue'
-import { clusterAuthHeader } from '../../../helpers/elasticsearchAdapter.ts'
+import { computed, nextTick, ref, toRaw, watch } from 'vue'
 import { REQUEST_DEFAULT_HEADERS } from '../../../consts'
 import { useConnectionStore } from '../../../store/connection'
+import ElasticsearchAdapter from '../../../services/ElasticsearchAdapter.ts'
 import { useSnackbar } from '../../Snackbar'
 import { useIdbStore } from '../../../db/Idb'
-import { fetchMethod } from '../../../helpers/fetch'
 import { IdbRestQueryTab, IdbRestQueryTabRequest } from '../../../db/types.ts'
 import { debounce } from '../../../helpers/debounce.ts'
 import { parseKibana } from '../../../helpers/parseKibana.ts'
@@ -43,15 +42,13 @@ export const useRestQueryForm = (props: RestQueryFormProps, emit: any) => {
       headers: Object.assign({}, REQUEST_DEFAULT_HEADERS)
     }
 
-    const authHeader = clusterAuthHeader(connectionStore.activeCluster.auth)
-    if (authHeader) options.headers.Authorization = authHeader
-
     let url = connectionStore.activeCluster.uri
     if (!url.endsWith('/') && !props.tab.request.path.startsWith('/')) url += '/'
     url += cleanIndexName(props.tab.request.path)
 
     try {
-      const fetchResponse = await fetchMethod(url, options)
+      const adapter = new ElasticsearchAdapter(connectionStore.activeCluster)
+      const fetchResponse = await adapter.fetch(url, options)
       props.tab.response.status = `${fetchResponse.status} ${fetchResponse.statusText}`
       props.tab.response.ok = fetchResponse.ok
       const text = await fetchResponse.text()
