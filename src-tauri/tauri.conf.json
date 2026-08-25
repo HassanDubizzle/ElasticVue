@@ -32,7 +32,7 @@
         "depends": []
       }
     },
-    "createUpdaterArtifacts": false
+    "createUpdaterArtifacts": "v1Compatible"
   },
   "build": {
     "beforeBuildCommand": "npx cross-env VITE_APP_BUILD_MODE=tauri npm run build",
@@ -46,7 +46,10 @@
   "identifier": "com.elasticvue.app",
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUwOTg1ODc2NjIzNzM4QTUKUldTbE9EZGlkbGlZVU5WQTFISkp1M1pmYXduQjRRQUYyTTFmN0l5NHhPa2ZpN3FaYklLc1JNMTUK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUwOTg1ODc2NjIzNzM4QTUKUldTbE9EZGlkbGlZVU5WQTFISkp1M1pmYXduQjRRQUYyTTFmN0l5NHhPa2ZpN3FaYklLc1JNMTUK",
+      "endpoints": [
+        "https://github.com/HassanDubizzle/ElasticVue/releases/latest/download/latest.json"
+      ]
     }
   },
   "app": {

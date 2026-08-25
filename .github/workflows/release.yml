@@ -76,7 +76,7 @@ jobs:
           if-no-files-found: error
           path: |
             src-tauri/target/release/bundle/msi/elasticvue_*_x64*
-            src-tauri/target/release/bundle/nsis/elasticvue_*_x64-setup.exe
+            src-tauri/target/release/bundle/nsis/*
             src-tauri/target/release/elasticvue.exe
             trivy-results.sarif
 
@@ -169,7 +169,7 @@ jobs:
           if-no-files-found: error
           path: |
             src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/elasticvue_*_aarch64.dmg
-            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/elasticvue.app
+            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/elasticvue.app*
             trivy-results.sarif
 
       #### build mac x86_64
@@ -205,8 +205,81 @@ jobs:
           if-no-files-found: error
           path: |
             src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/elasticvue_*_x64.dmg
-            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/elasticvue.app
+            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/elasticvue.app*
             trivy-results.sarif
+
+
+  publish:
+    name: Publish GitHub Release
+    needs: build_desktop
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      -   name: Download build artifacts
+          uses: actions/download-artifact@v8.0.1
+          with:
+            path: github-artifacts
+
+      -   name: Prepare release assets and updater manifest
+          shell: bash
+          env:
+            RELEASE_TAG: ${{ github.ref_name }}
+          run: |
+            set -euo pipefail
+            mkdir -p release-assets
+            
+            # Copy manually downloadable packages and updater bundles.
+            find github-artifacts -type f \( \
+              -name '*.dmg' -o -name '*.msi' -o -name '*.deb' -o \
+              -name '*.AppImage' -o -name '*.AppImage.sig' -o \
+              -name '*.nsis.zip' -o -name '*.nsis.zip.sig' -o \
+              -name '*-setup.exe' -o -name 'elasticvue.exe' -o -name 'elasticvue' \
+            \) -exec cp {} release-assets/ \;
+            
+            # macOS artifacts have the same Tauri-generated name in both builds.
+            cp "$(find github-artifacts/mac_aaarch64_artifacts -type f -name 'elasticvue.app.tar.gz' | head -n 1)" release-assets/elasticvue_aarch64.app.tar.gz
+            cp "$(find github-artifacts/mac_aaarch64_artifacts -type f -name 'elasticvue.app.tar.gz.sig' | head -n 1)" release-assets/elasticvue_aarch64.app.tar.gz.sig
+            cp "$(find github-artifacts/mac_x86_64_artifacts -type f -name 'elasticvue.app.tar.gz' | head -n 1)" release-assets/elasticvue_x64.app.tar.gz
+            cp "$(find github-artifacts/mac_x86_64_artifacts -type f -name 'elasticvue.app.tar.gz.sig' | head -n 1)" release-assets/elasticvue_x64.app.tar.gz.sig
+            
+            mac_arm=release-assets/elasticvue_aarch64.app.tar.gz
+            mac_x64=release-assets/elasticvue_x64.app.tar.gz
+            linux_appimage=$(find release-assets -type f -name '*.AppImage' | head -n 1)
+            windows_nsis=$(find release-assets -type f -name '*.nsis.zip' | head -n 1)
+            
+            test -s "$mac_arm.sig"
+            test -s "$mac_x64.sig"
+            test -n "$linux_appimage" && test -s "$linux_appimage.sig"
+            test -n "$windows_nsis" && test -s "$windows_nsis.sig"
+            
+            base_url="https://github.com/HassanDubizzle/ElasticVue/releases/download/${RELEASE_TAG}"
+            jq -n \
+              --arg version "${RELEASE_TAG#v}" \
+              --arg notes "See the GitHub release notes." \
+              --arg pub_date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --arg mac_arm_signature "$(cat "$mac_arm.sig")" \
+              --arg mac_arm_url "$base_url/$(basename "$mac_arm")" \
+              --arg mac_x64_signature "$(cat "$mac_x64.sig")" \
+              --arg mac_x64_url "$base_url/$(basename "$mac_x64")" \
+              --arg linux_signature "$(cat "$linux_appimage.sig")" \
+              --arg linux_url "$base_url/$(basename "$linux_appimage")" \
+              --arg windows_signature "$(cat "$windows_nsis.sig")" \
+              --arg windows_url "$base_url/$(basename "$windows_nsis")" \
+              '{version: $version, notes: $notes, pub_date: $pub_date, platforms: {
+                "darwin-aarch64": {signature: $mac_arm_signature, url: $mac_arm_url},
+                "darwin-x86_64": {signature: $mac_x64_signature, url: $mac_x64_url},
+                "linux-x86_64": {signature: $linux_signature, url: $linux_url},
+                "windows-x86_64": {signature: $windows_signature, url: $windows_url}
+              }}' > release-assets/latest.json
+
+      -   name: Create GitHub Release
+          uses: softprops/action-gh-release@v3.0.2
+          with:
+            tag_name: ${{ github.ref_name }}
+            generate_release_notes: true
+            files: release-assets/*
 
 
 #  build_browser_extensions:
