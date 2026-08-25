@@ -14,15 +14,15 @@ jobs:
       matrix:
         platform: [ macos-latest, ubuntu-24.04, windows-latest ]
     runs-on: ${{ matrix.platform }}
-    env:
-      TAURI_SIGNING_PRIVATE_KEY: "${{ secrets.TAURI_PRIVATE_KEY }}"
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "${{ secrets.TAURI_KEY_PASSWORD }}"
-      APPLE_CERTIFICATE: "${{ secrets.APPLE_CERTIFICATE }}"
-      APPLE_CERTIFICATE_PASSWORD: "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}"
-      APPLE_SIGNING_IDENTITY: "${{ secrets.APPLE_SIGNING_IDENTITY }}"
-      APPLE_ID: "${{ secrets.APPLE_ID }}"
-      APPLE_PASSWORD: "${{ secrets.APPLE_PASSWORD }}"
-      APPLE_TEAM_ID: "${{ secrets.APPLE_TEAM_ID }}"
+    #    env:
+    #      TAURI_SIGNING_PRIVATE_KEY: "${{ secrets.TAURI_PRIVATE_KEY }}"
+    #      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "${{ secrets.TAURI_KEY_PASSWORD }}"
+    #      APPLE_CERTIFICATE: "${{ secrets.APPLE_CERTIFICATE }}"
+    #      APPLE_CERTIFICATE_PASSWORD: "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}"
+    #      APPLE_SIGNING_IDENTITY: "${{ secrets.APPLE_SIGNING_IDENTITY }}"
+    #      APPLE_ID: "${{ secrets.APPLE_ID }}"
+    #      APPLE_PASSWORD: "${{ secrets.APPLE_PASSWORD }}"
+    #      APPLE_TEAM_ID: "${{ secrets.APPLE_TEAM_ID }}"
 
     steps:
       ### system setup
@@ -41,6 +41,10 @@ jobs:
 
       - run: rustup toolchain install stable
         if: matrix.platform == 'windows-latest'
+
+      - name: Write custom clusters
+        run: echo '${{ secrets.CUSTOM_CLUSTERS }}' > default_clusters.json
+        shell: bash
 
       - name: windows > build
         run: npm run tauri:build
@@ -137,227 +141,226 @@ jobs:
             src-tauri/target/x86_64-apple-darwin/release/bundle/macos/elasticvue_x64*
 
 
-  build_browser_extensions:
-    name: Build browser extensions
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
+#  build_browser_extensions:
+#    name: Build browser extensions
+#    runs-on: ubuntu-24.04
+#    steps:
+#      - uses: actions/checkout@v6
+#
+#      - name: build extensions
+#        run: make build_browser_extensions
+#
+#      - name: upload artifacts
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: browser_extension_artifacts
+#          if-no-files-found: error
+#          path: |
+#            artifacts/*.zip
 
-      - name: build extensions
-        run: make build_browser_extensions
+#  build_docker:
+#    name: Build docker images
+#    runs-on: ubuntu-24.04
+#    permissions:
+#      contents: read
+#      packages: write
+#    steps:
+#      - uses: actions/checkout@v6
+#
+#      - name: Docker hub login
+#        uses: docker/login-action@v3
+#        with:
+#          username: ${{ secrets.DOCKERHUB_USERNAME }}
+#          password: ${{ secrets.DOCKERHUB_TOKEN }}
+#
+#      - name: Login to GitHub Container Registry
+#        uses: docker/login-action@v3
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Set up QEMU
+#        uses: docker/setup-qemu-action@v3
+#
+#      - name: Set up Docker buildx
+#        uses: docker/setup-buildx-action@v3
+#
+#      - uses: martinbeentjes/npm-get-version-action@v1.3.1
+#        id: package-version
+#
+#      - name: Build and push to Docker Hub
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: .
+#          platforms: linux/amd64,linux/arm64,linux/arm/v7
+#          file: docker/Dockerfile_multiarch
+#          push: true
+#          tags: |
+#            cars10/elasticvue:latest
+#            cars10/elasticvue:${{ steps.package-version.outputs.current-version }}
+#            ghcr.io/cars10/elasticvue:latest
+#            ghcr.io/cars10/elasticvue:${{ steps.package-version.outputs.current-version }}
 
-      - name: upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: browser_extension_artifacts
-          if-no-files-found: error
-          path: |
-            artifacts/*.zip
-
-
-  build_docker:
-    name: Build docker images
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Docker hub login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker buildx
-        uses: docker/setup-buildx-action@v3
-
-      - uses: martinbeentjes/npm-get-version-action@v1.3.1
-        id: package-version
-
-      - name: Build and push to Docker Hub
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
-          file: docker/Dockerfile_multiarch
-          push: true
-          tags: |
-            cars10/elasticvue:latest
-            cars10/elasticvue:${{ steps.package-version.outputs.current-version }}
-            ghcr.io/cars10/elasticvue:latest
-            ghcr.io/cars10/elasticvue:${{ steps.package-version.outputs.current-version }}
-
-  publish:
-    name: Publish release
-    needs:
-      - build_desktop
-      - build_docker
-      - build_browser_extensions
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-      - uses: martinbeentjes/npm-get-version-action@v1.3.1
-        id: package-version
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: github-artifacts
-
-      - name: Extract changelog for latest version
-        id: changelog
-        run: |
-          # Extract the changelog for the latest version and trim blank lines
-          CHANGELOG=$(awk '/^## [0-9]+\.[0-9]+\.[0-9]+/ {if (p) exit; p=1; next} p' CHANGELOG.md | sed '/^[[:space:]]*$/d')
-
-          # Output the extracted changelog for debugging
-          echo "$CHANGELOG"
-
-          # Save output
-          echo 'changelog<<EOF' >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
-
-      - uses: ncipollo/release-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          draft: false
-          prerelease: false
-          tag: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          artifacts: |
-            github-artifacts/linux_artifacts/bundle/appimage/elasticvue_*_amd64.*
-            github-artifacts/linux_artifacts/bundle/deb/elasticvue_*_amd64.deb
-            github-artifacts/linux_artifacts/elasticvue
-            github-artifacts/mac_aaarch64_artifacts/dmg/elasticvue_*_aarch64.dmg
-            github-artifacts/mac_aaarch64_artifacts/macos/elasticvue_aarch64*
-            github-artifacts/mac_x86_64_artifacts/dmg/elasticvue_*_x64.dmg
-            github-artifacts/mac_x86_64_artifacts/macos/elasticvue_x64*
-            github-artifacts/windows_artifacts/bundle/msi/elasticvue_*_x64*
-            github-artifacts/windows_artifacts/elasticvue.exe
-            github-artifacts/browser_extension_artifacts/*.zip
-          body: |
-            ## Changelog
-            ${{ steps.changelog.outputs.changelog }}
-            ## Using elasticvue
-            ### Desktop app
-            * [Windows .msi](https://github.com/cars10/elasticvue/releases/download/${{ github.ref_name }}/elasticvue_${{ steps.package-version.outputs.current-version }}_x64_en-US.msi)
-            * [Mac x68 .dmg](https://github.com/cars10/elasticvue/releases/download/${{ github.ref_name }}/elasticvue_${{ steps.package-version.outputs.current-version }}_x64.dmg) / [Mac aarch64 .dmg](https://github.com/cars10/elasticvue/releases/download/${{ github.ref_name }}/elasticvue_${{ steps.package-version.outputs.current-version }}_aarch64.dmg)
-            * [Linux .AppImage](https://github.com/cars10/elasticvue/releases/download/${{ github.ref_name }}/elasticvue_${{ steps.package-version.outputs.current-version }}_amd64.AppImage) / [Linux .deb](https://github.com/cars10/elasticvue/releases/download/${{ github.ref_name }}/elasticvue_${{ steps.package-version.outputs.current-version }}_amd64.deb)
-
-            ### Browser extension
-            * [Google Chrome](https://chrome.google.com/webstore/detail/elasticvue/hkedbapjpblbodpgbajblpnlpenaebaa)
-            * [Mozilla Firefox](https://addons.mozilla.org/en-US/firefox/addon/elasticvue/)
-            * [Microsoft Edge](https://microsoftedge.microsoft.com/addons/detail/elasticvue/geifniocjfnfilcbeloeidajlfmhdlgo)
-            ### Other
-            * [Docker](https://hub.docker.com/r/cars10/elasticvue)
-            * [Hosted](https://app.elasticvue.com)
-
-      - name: deploy
-        run: |
-          curl -X POST https://autodok.cars10k.de/update \
-            -H "Content-Type: application/json" \
-            -H "Authorization: ${{ secrets.AUTODOK_API_KEY }}" \
-            -d '{"container": "elasticvue", "image": "cars10/elasticvue:latest"}'
+#  publish:
+#    name: Publish release
+#    needs:
+#      - build_desktop
+#      - build_docker
+#      - build_browser_extensions
+#    runs-on: ubuntu-24.04
+#    steps:
+#      - uses: actions/checkout@v6
+#      - uses: martinbeentjes/npm-get-version-action@v1.3.1
+#        id: package-version
+#
+#      - uses: actions/download-artifact@v4
+#        with:
+#          path: github-artifacts
+#
+#      - name: Extract changelog for latest version
+#        id: changelog
+#        run: |
+#          # Extract the changelog for the latest version and trim blank lines
+#          CHANGELOG=$(awk '/^## [0-9]+\.[0-9]+\.[0-9]+/ {if (p) exit; p=1; next} p' CHANGELOG.md | sed '/^[[:space:]]*$/d')
+#
+#          # Output the extracted changelog for debugging
+#          echo "$CHANGELOG"
+#
+#          # Save output
+#          echo 'changelog<<EOF' >> $GITHUB_OUTPUT
+#          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+#          echo 'EOF' >> $GITHUB_OUTPUT
+#
+#      - uses: ncipollo/release-action@v1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          draft: false
+#          prerelease: false
+#          tag: ${{ github.ref_name }}
+#          name: ${{ github.ref_name }}
+#          artifacts: |
+#            github-artifacts/linux_artifacts/bundle/appimage/elasticvue_*_amd64.*
+#            github-artifacts/linux_artifacts/bundle/deb/elasticvue_*_amd64.deb
+#            github-artifacts/linux_artifacts/elasticvue
+#            github-artifacts/mac_aaarch64_artifacts/dmg/elasticvue_*_aarch64.dmg
+#            github-artifacts/mac_aaarch64_artifacts/macos/elasticvue_aarch64*
+#            github-artifacts/mac_x86_64_artifacts/dmg/elasticvue_*_x64.dmg
+#            github-artifacts/mac_x86_64_artifacts/macos/elasticvue_x64*
+#            github-artifacts/windows_artifacts/bundle/msi/elasticvue_*_x64*
+#            github-artifacts/windows_artifacts/elasticvue.exe
+#            github-artifacts/browser_extension_artifacts/*.zip
+#          body: |
+#            ## Changelog
+#            ${{ steps.changelog.outputs.changelog }}
+#            ## Using elasticvue
+#            ### Desktop app
+#            * [Windows .msi](https://github.com/cars10/elasticvue/releases/download/${{ github.ref_name }}/elasticvue_${{ steps.package-version.outputs.current-version }}_x64_en-US.msi)
+#            * [Mac x68 .dmg](https://github.com/cars10/elasticvue/releases/download/${{ github.ref_name }}/elasticvue_${{ steps.package-version.outputs.current-version }}_x64.dmg) / [Mac aarch64 .dmg](https://github.com/cars10/elasticvue/releases/download/${{ github.ref_name }}/elasticvue_${{ steps.package-version.outputs.current-version }}_aarch64.dmg)
+#            * [Linux .AppImage](https://github.com/cars10/elasticvue/releases/download/${{ github.ref_name }}/elasticvue_${{ steps.package-version.outputs.current-version }}_amd64.AppImage) / [Linux .deb](https://github.com/cars10/elasticvue/releases/download/${{ github.ref_name }}/elasticvue_${{ steps.package-version.outputs.current-version }}_amd64.deb)
+#
+#            ### Browser extension
+#            * [Google Chrome](https://chrome.google.com/webstore/detail/elasticvue/hkedbapjpblbodpgbajblpnlpenaebaa)
+#            * [Mozilla Firefox](https://addons.mozilla.org/en-US/firefox/addon/elasticvue/)
+#            * [Microsoft Edge](https://microsoftedge.microsoft.com/addons/detail/elasticvue/geifniocjfnfilcbeloeidajlfmhdlgo)
+#            ### Other
+#            * [Docker](https://hub.docker.com/r/cars10/elasticvue)
+#            * [Hosted](https://app.elasticvue.com)
+#
+#      - name: deploy
+#        run: |
+#          curl -X POST https://autodok.cars10k.de/update \
+#            -H "Content-Type: application/json" \
+#            -H "Authorization: ${{ secrets.AUTODOK_API_KEY }}" \
+#            -d '{"container": "elasticvue", "image": "cars10/elasticvue:latest"}'
 
 
-  publish_browser_extensions:
-    name: Publish browser extensions
-    needs:
-      - build_browser_extensions
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
+#  publish_browser_extensions:
+#    name: Publish browser extensions
+#    needs:
+#      - build_browser_extensions
+#    runs-on: ubuntu-24.04
+#    steps:
+#      - uses: actions/checkout@v6
+#
+#      - uses: martinbeentjes/npm-get-version-action@v1.3.1
+#        id: package-version
+#
+#      - uses: actions/download-artifact@v4
+#        with:
+#          name: browser_extension_artifacts
+#          path: artifacts
+#
+#      - name: Create Firefox source zip
+#        run: |
+#          git archive ${{ github.ref_name }} -o artifacts/elasticvue-${{ steps.package-version.outputs.current-version }}-firefox-source.zip
+#
+#      - name: Publish to browser stores
+#        uses: PlasmoHQ/bpp@v3
+#        continue-on-error: true
+#        with:
+#          keys: ${{ secrets.BPP_KEYS }}
+#          chrome-file: artifacts/elasticvue-${{ steps.package-version.outputs.current-version }}-chrome.zip
+#          firefox-file: artifacts/elasticvue-${{ steps.package-version.outputs.current-version }}-firefox.zip
+#          source-file: artifacts/elasticvue-${{ steps.package-version.outputs.current-version }}-firefox-source.zip
+#          edge-file: artifacts/elasticvue-${{ steps.package-version.outputs.current-version }}-edge.zip
+#          edge-notes: ${{ secrets.BPP_EDGE_NOTES }}
+#          version-file: package.json
 
-      - uses: martinbeentjes/npm-get-version-action@v1.3.1
-        id: package-version
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: browser_extension_artifacts
-          path: artifacts
-
-      - name: Create Firefox source zip
-        run: |
-          git archive ${{ github.ref_name }} -o artifacts/elasticvue-${{ steps.package-version.outputs.current-version }}-firefox-source.zip
-
-      - name: Publish to browser stores
-        uses: PlasmoHQ/bpp@v3
-        continue-on-error: true
-        with:
-          keys: ${{ secrets.BPP_KEYS }}
-          chrome-file: artifacts/elasticvue-${{ steps.package-version.outputs.current-version }}-chrome.zip
-          firefox-file: artifacts/elasticvue-${{ steps.package-version.outputs.current-version }}-firefox.zip
-          source-file: artifacts/elasticvue-${{ steps.package-version.outputs.current-version }}-firefox-source.zip
-          edge-file: artifacts/elasticvue-${{ steps.package-version.outputs.current-version }}-edge.zip
-          edge-notes: ${{ secrets.BPP_EDGE_NOTES }}
-          version-file: package.json
-
-  update-aur:
-    needs: publish
-    runs-on: ubuntu-latest
-    container:
-      image: archlinux:latest
-    steps:
-      - name: Install dependencies
-        run: |
-          pacman -Syu --noconfirm git devtools pacman-contrib openssh binutils sudo
-
-      - name: Setup Builder User
-        run: |
-          useradd -m builder
-          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-
-      - name: Setup SSH Key
-        env:
-          AUR_PRIVATE_KEY: ${{ secrets.AUR_PRIVATE_KEY }}
-        run: |
-          mkdir -p /home/builder/.ssh
-          echo "$AUR_PRIVATE_KEY" > /home/builder/.ssh/id_ed25519
-          chmod 600 /home/builder/.ssh/id_ed25519
-          ssh-keyscan aur.archlinux.org >> /home/builder/.ssh/known_hosts
-          chown -R builder:builder /home/builder/.ssh
-
-      - name: Update AUR package
-        shell: bash
-        run: |
-          NEW_VER=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-
-          su builder <<EOF
-          set -e
-          cd /home/builder
-
-          git config --global user.name "Github Actions"
-          git config --global user.email "actions@github.com"
-
-          git clone ssh://aur@aur.archlinux.org/elasticvue-bin.git
-          cd elasticvue-bin
-
-          sed -i "s/^pkgver=.*/pkgver=$NEW_VER/" PKGBUILD
-          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
-
-          # Try updating checksums, retry once after 60s if GitHub assets aren't ready
-          echo "Attempting to update checksums..."
-          if ! updpkgsums; then
-            echo "⚠️ Assets not found. Waiting 60 seconds for GitHub CDN..."
-            sleep 60
-            updpkgsums || (echo "❌ Assets still unavailable. Aborting." && exit 1)
-          fi
-
-          makepkg --printsrcinfo > .SRCINFO
-          git add PKGBUILD .SRCINFO
-          git commit -m "Update to v${NEW_VER}"
-          git push
-          EOF
+#  update-aur:
+#    needs: publish
+#    runs-on: ubuntu-latest
+#    container:
+#      image: archlinux:latest
+#    steps:
+#      - name: Install dependencies
+#        run: |
+#          pacman -Syu --noconfirm git devtools pacman-contrib openssh binutils sudo
+#
+#      - name: Setup Builder User
+#        run: |
+#          useradd -m builder
+#          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+#
+#      - name: Setup SSH Key
+#        env:
+#          AUR_PRIVATE_KEY: ${{ secrets.AUR_PRIVATE_KEY }}
+#        run: |
+#          mkdir -p /home/builder/.ssh
+#          echo "$AUR_PRIVATE_KEY" > /home/builder/.ssh/id_ed25519
+#          chmod 600 /home/builder/.ssh/id_ed25519
+#          ssh-keyscan aur.archlinux.org >> /home/builder/.ssh/known_hosts
+#          chown -R builder:builder /home/builder/.ssh
+#
+#      - name: Update AUR package
+#        shell: bash
+#        run: |
+#          NEW_VER=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+#
+#          su builder <<EOF
+#          set -e
+#          cd /home/builder
+#
+#          git config --global user.name "Github Actions"
+#          git config --global user.email "actions@github.com"
+#
+#          git clone ssh://aur@aur.archlinux.org/elasticvue-bin.git
+#          cd elasticvue-bin
+#
+#          sed -i "s/^pkgver=.*/pkgver=$NEW_VER/" PKGBUILD
+#          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+#
+#          # Try updating checksums, retry once after 60s if GitHub assets aren't ready
+#          echo "Attempting to update checksums..."
+#          if ! updpkgsums; then
+#            echo "⚠️ Assets not found. Waiting 60 seconds for GitHub CDN..."
+#            sleep 60
+#            updpkgsums || (echo "❌ Assets still unavailable. Aborting." && exit 1)
+#          fi
+#
+#          makepkg --printsrcinfo > .SRCINFO
+#          git add PKGBUILD .SRCINFO
+#          git commit -m "Update to v${NEW_VER}"
+#          git push
+#          EOF
