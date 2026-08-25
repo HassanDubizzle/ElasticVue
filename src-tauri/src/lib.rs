@@ -1,4 +1,5 @@
 use fetch_reqwest::{FetchOptions, FetchResponseResult};
+use tauri::Manager;
 
 mod aws_credentials;
 mod load_file;
@@ -33,6 +34,14 @@ pub fn run() {
         .setup(|app| {
             let menu = menu::menu(app)?;
             app.set_menu(menu)?;
+
+            app.on_menu_event(|app, event| {
+                if event.id() == "developer-tools" {
+                    if let Some(window) = app.get_webview_window("main") {
+                        window.open_devtools();
+                    }
+                }
+            });
 
             Ok(())
         })

@@ -1,4 +1,4 @@
-use tauri::menu::{AboutMetadataBuilder, Menu, MenuBuilder, SubmenuBuilder};
+use tauri::menu::{AboutMetadataBuilder, Menu, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{App, Wry};
 
 pub fn menu(app: &mut App) -> Result<Menu<Wry>, tauri::Error> {
@@ -25,9 +25,18 @@ pub fn menu(app: &mut App) -> Result<Menu<Wry>, tauri::Error> {
         .select_all()
         .build()?;
 
+    let view = SubmenuBuilder::new(app, "View")
+        .item(
+            &MenuItemBuilder::with_id("developer-tools", "Developer Tools")
+                .accelerator("F12")
+                .build(app)?,
+        )
+        .build()?;
+
     let menu = MenuBuilder::new(app).build()?;
 
     menu.append(&about_quit)?;
     menu.append(&edit)?;
+    menu.append(&view)?;
     Ok(menu)
 }

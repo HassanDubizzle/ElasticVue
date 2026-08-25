@@ -60,6 +60,7 @@ jobs:
           if-no-files-found: error
           path: |
             src-tauri/target/release/bundle/msi/elasticvue_*_x64*
+            src-tauri/target/release/bundle/nsis/elasticvue_*_x64-setup.exe
             src-tauri/target/release/elasticvue.exe
 
       ### LINUX
