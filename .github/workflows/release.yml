@@ -14,9 +14,6 @@ jobs:
       matrix:
         platform: [ macos-latest, ubuntu-24.04, windows-latest ]
     runs-on: ${{ matrix.platform }}
-    #    env:
-    #      TAURI_SIGNING_PRIVATE_KEY: "${{ secrets.TAURI_PRIVATE_KEY }}"
-    #      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "${{ secrets.TAURI_KEY_PASSWORD }}"
     #      APPLE_CERTIFICATE: "${{ secrets.APPLE_CERTIFICATE }}"
     #      APPLE_CERTIFICATE_PASSWORD: "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}"
     #      APPLE_SIGNING_IDENTITY: "${{ secrets.APPLE_SIGNING_IDENTITY }}"
@@ -102,12 +99,6 @@ jobs:
         run: npm run tauri:build -- --target aarch64-apple-darwin
         if: matrix.platform == 'macos-latest'
 
-      - name: mac aaarch64 > rename artifacts
-        if: matrix.platform == 'macos-latest'
-        run: |
-          mv src-tauri/target/aarch64-apple-darwin/release/bundle/macos/elasticvue.app.tar.gz src-tauri/target/aarch64-apple-darwin/release/bundle/macos/elasticvue_aarch64.app.tar.gz
-          mv src-tauri/target/aarch64-apple-darwin/release/bundle/macos/elasticvue.app.tar.gz.sig src-tauri/target/aarch64-apple-darwin/release/bundle/macos/elasticvue_aarch64.app.tar.gz.sig
-
       - name: mac aaarch64 > upload artifacts
         if: matrix.platform == 'macos-latest'
         uses: actions/upload-artifact@v4
@@ -116,19 +107,13 @@ jobs:
           if-no-files-found: error
           path: |
             src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/elasticvue_*_aarch64.dmg
-            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/elasticvue_aarch64*
+            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/elasticvue.app
 
       #### build mac x86_64
 
       - name: mac x86_64 > build
         run: npm run tauri:build -- --target x86_64-apple-darwin
         if: matrix.platform == 'macos-latest'
-
-      - name: mac x86_64 > rename artifacts
-        if: matrix.platform == 'macos-latest'
-        run: |
-          mv src-tauri/target/x86_64-apple-darwin/release/bundle/macos/elasticvue.app.tar.gz src-tauri/target/x86_64-apple-darwin/release/bundle/macos/elasticvue_x64.app.tar.gz
-          mv src-tauri/target/x86_64-apple-darwin/release/bundle/macos/elasticvue.app.tar.gz.sig src-tauri/target/x86_64-apple-darwin/release/bundle/macos/elasticvue_x64.app.tar.gz.sig
 
       - name: mac x86_64 > upload artifacts
         if: matrix.platform == 'macos-latest'
@@ -138,7 +123,7 @@ jobs:
           if-no-files-found: error
           path: |
             src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/elasticvue_*_x64.dmg
-            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/elasticvue_x64*
+            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/elasticvue.app
 
 
 #  build_browser_extensions:

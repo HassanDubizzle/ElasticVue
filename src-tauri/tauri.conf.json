@@ -32,7 +32,7 @@
         "depends": []
       }
     },
-    "createUpdaterArtifacts": "v1Compatible"
+    "createUpdaterArtifacts": false
   },
   "build": {
     "beforeBuildCommand": "npx cross-env VITE_APP_BUILD_MODE=tauri npm run build",
