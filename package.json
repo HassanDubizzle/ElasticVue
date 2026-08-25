@@ -1,7 +1,7 @@
 {
   "name": "elasticvue",
   "private": true,
-  "version": "2.0.2",
+  "version": "2.0.3",
   "engines": {
     "node": ">=24.15.0"
   },
@@ -20,7 +20,7 @@
     "test:e2e:report": "playwright show-report",
     "ci": "npm run format && npm run lint && npm run lint:style && npm run tsc && npm run build && npm run test:unit && npm run test:e2e:all",
     "tauri:dev": "cross-env GDK_BACKEND=x11 tauri dev",
-    "tauri:build": "tauri build --no-sign",
+    "tauri:build": "tauri build",
     "bundle:report": "vite-bundle-visualizer"
   },
   "dependencies": {
