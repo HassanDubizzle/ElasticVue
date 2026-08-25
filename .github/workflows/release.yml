@@ -52,6 +52,25 @@ jobs:
         run: npm run tauri:build
         if: matrix.platform == 'windows-latest'
 
+      -   name: windows > trivy scan (table)
+          if: matrix.platform == 'windows-latest'
+          uses: aquasecurity/trivy-action@v0.36.0
+          with:
+            scan-type: fs
+            scan-ref: .
+            format: table
+            exit-code: 0
+
+      -   name: windows > trivy scan (sarif)
+          if: matrix.platform == 'windows-latest'
+          uses: aquasecurity/trivy-action@v0.36.0
+          with:
+            scan-type: fs
+            scan-ref: .
+            format: sarif
+            output: trivy-results.sarif
+            exit-code: 0
+
       - name: windows > upload artifacts
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-artifact@v4
@@ -62,12 +81,32 @@ jobs:
             src-tauri/target/release/bundle/msi/elasticvue_*_x64*
             src-tauri/target/release/bundle/nsis/elasticvue_*_x64-setup.exe
             src-tauri/target/release/elasticvue.exe
+            trivy-results.sarif
 
       ### LINUX
 
       - name: linux > build
         run: make TAURI_SIGNING_PRIVATE_KEY="${{ secrets.TAURI_PRIVATE_KEY }}" TAURI_SIGNING_PRIVATE_KEY_PASSWORD="${{ secrets.TAURI_KEY_PASSWORD }}" build_docker_tauri
         if: matrix.platform == 'ubuntu-24.04'
+
+      -   name: linux > trivy scan (table)
+          if: matrix.platform == 'ubuntu-24.04'
+          uses: aquasecurity/trivy-action@v0.36.0
+          with:
+            scan-type: fs
+            scan-ref: .
+            format: table
+            exit-code: 0
+
+      -   name: linux > trivy scan (sarif)
+          if: matrix.platform == 'ubuntu-24.04'
+          uses: aquasecurity/trivy-action@v0.36.0
+          with:
+            scan-type: fs
+            scan-ref: .
+            format: sarif
+            output: trivy-results.sarif
+            exit-code: 0
 
       - name: linux > upload artifacts
         if: matrix.platform == 'ubuntu-24.04'
@@ -79,6 +118,7 @@ jobs:
             src-tauri/target/release/bundle/deb/elasticvue_*_amd64.deb
             src-tauri/target/release/bundle/appimage/elasticvue_*_amd64.*
             src-tauri/target/release/elasticvue
+            trivy-results.sarif
 
       ### MAC
 
@@ -105,6 +145,25 @@ jobs:
         run: npm run tauri:build -- --target aarch64-apple-darwin
         if: matrix.platform == 'macos-latest'
 
+      -   name: mac aaarch64 > trivy scan (table)
+          if: matrix.platform == 'macos-latest'
+          uses: aquasecurity/trivy-action@v0.36.0
+          with:
+            scan-type: fs
+            scan-ref: .
+            format: table
+            exit-code: 0
+
+      -   name: mac aaarch64 > trivy scan (sarif)
+          if: matrix.platform == 'macos-latest'
+          uses: aquasecurity/trivy-action@v0.36.0
+          with:
+            scan-type: fs
+            scan-ref: .
+            format: sarif
+            output: trivy-results.sarif
+            exit-code: 0
+
       - name: mac aaarch64 > upload artifacts
         if: matrix.platform == 'macos-latest'
         uses: actions/upload-artifact@v4
@@ -114,12 +173,32 @@ jobs:
           path: |
             src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/elasticvue_*_aarch64.dmg
             src-tauri/target/aarch64-apple-darwin/release/bundle/macos/elasticvue.app
+            trivy-results.sarif
 
       #### build mac x86_64
 
       - name: mac x86_64 > build
         run: npm run tauri:build -- --target x86_64-apple-darwin
         if: matrix.platform == 'macos-latest'
+
+      -   name: mac x86_64 > trivy scan (table)
+          if: matrix.platform == 'macos-latest'
+          uses: aquasecurity/trivy-action@v0.36.0
+          with:
+            scan-type: fs
+            scan-ref: .
+            format: table
+            exit-code: 0
+
+      -   name: mac x86_64 > trivy scan (sarif)
+          if: matrix.platform == 'macos-latest'
+          uses: aquasecurity/trivy-action@v0.36.0
+          with:
+            scan-type: fs
+            scan-ref: .
+            format: sarif
+            output: trivy-results.sarif
+            exit-code: 0
 
       - name: mac x86_64 > upload artifacts
         if: matrix.platform == 'macos-latest'
@@ -130,6 +209,7 @@ jobs:
           path: |
             src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/elasticvue_*_x64.dmg
             src-tauri/target/x86_64-apple-darwin/release/bundle/macos/elasticvue.app
+            trivy-results.sarif
 
 
 #  build_browser_extensions:
